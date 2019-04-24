@@ -254,6 +254,7 @@ with tf.Session(config=config) as sess:
     my_num = 100
     num_gen_batches = 10
 
+    # Generates samples to use in computing metrics, such as IS or FID
     generator_samples = sess.run([fake])[0]
     last_time = time.time()
     for i in range(1, num_gen_batches):
@@ -261,6 +262,7 @@ with tf.Session(config=config) as sess:
         print("time of gen_batch:", time.time() - last_time)
         last_time = time.time()
 
+    # Generates, prints, and saves a grid of GAN samples.
     gen_images = np.uint8(np.clip((generator_samples[0:800:8] + 1) * 128, 0, 255))
     image_rows = np.array([np.concatenate(gen_images[10*a:10*a+10,:,:,:], axis=1) for a in range(10)])
     composite =  np.concatenate(image_rows, axis=0)
@@ -280,7 +282,7 @@ with tf.Session(config=config) as sess:
             inception_score = math.exp(np.average(np.sum(p_batch * (np.log(p_batch) - np.log(avg_label_vals)), axis=1)))
             scores.append(inception_score)
         return np.average(scores), np.std(scores)
-        
+
 
     if(compute_IS_at_end):
         print("Inception Score:", get_inception_score(generator_samples))
