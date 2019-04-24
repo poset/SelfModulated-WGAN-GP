@@ -232,9 +232,8 @@ with tf.Session(config=config) as sess:
             print('a:', a, 'took time:', time.time()-last_time)
             last_time = time.time()
 
-            # Does 5 optimzer steps on the discriminator network, then 1 on the generator network.
 
-
+            # Does n_dis (default:5) optimzer steps on the discriminator network, then 1 on the generator network.
             for i in range(n_dis):
                 np.random.shuffle(x_train)
                 loss_val, real_disc_vals, fake_disc_vals, _, grad_pen = sess.run([loss_d, d_real, d_fake, opt_fn1, gradient_penalty],
@@ -242,7 +241,7 @@ with tf.Session(config=config) as sess:
             sess.run([opt_fn2], feed_dict={lr: (initial_lr * (n_final_iter-a)/n_final_iter), iteration: a}, options=run_options)
 
             # Every 50 iterations, render and save a composite image of generator samples.
-            if(a%10==0):
+            if(a%50==0):
                 generate_composite(a)
 
             # Every 1000 steps, save model parameters in a checkpoint.
