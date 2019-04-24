@@ -35,6 +35,7 @@ n_filters = 256
 initial_lr = 2e-4     # 2e-4
 batch_size = 256
 n_dis = 5
+compute_IS_at_end = False
 
 netid = str(batch_size)
 if(is_self_modulating):
@@ -63,20 +64,20 @@ def average_gradients(tower_grads):
         average_grads.append((grad, v))
     return avg_grads
 
-def upsample_conv2d(x, n_filters=256, kernel_size=(3, 3)): # I think this is very likely correct. check with ppl scope not required here.
+def upsample_conv2d(x, n_filters=256, kernel_size=(3, 3)):
     _x = tf.concat([x, x, x, x], axis=-1)
     _x = tf.depth_to_space(_x, block_size=2)
     _x = layers.conv2d(_x, n_filters, kernel_size=kernel_size, padding='same')
     return _x
 
-def downsample_conv2d(x, scope, n_filters=256, kernel_size=(3, 3)): # Compared to hw document, I use variable_scope and a named layer for variable reuse. I don't think a problem is here.
+def downsample_conv2d(x, scope, n_filters=256, kernel_size=(3, 3)):
     with tf.variable_scope(scope):
         _x = tf.space_to_depth(x, block_size=2)
         _x = tf.add_n(tf.split(_x, 4, axis=-1))/4
         _x = layers.conv2d(_x, n_filters, kernel_size=kernel_size, padding='same', name='downsample_conv2d')
         return _x
 
-def resBlockUp(x, latent, n_filters=256, kernel_size=(3, 3), scope='default_scope'): #check they have same moments code as me. for side info, do both BNs get nets? check scope isn't required here.
+def resBlockUp(x, latent, n_filters=256, kernel_size=(3, 3), scope='default_scope'):
     with tf.variable_scope(scope):
         scale = None
         offset = None
@@ -109,7 +110,7 @@ def resBlockUp(x, latent, n_filters=256, kernel_size=(3, 3), scope='default_scop
         shortcut = upsample_conv2d(x, kernel_size=(1, 1), n_filters=n_filters)
         return residual + shortcut
 
-def resBlockDown(x, n_filters=256, kernel_size=(3, 3), scope='default_arg'): #Audited, I doubt problems are here.
+def resBlockDown(x, n_filters=256, kernel_size=(3, 3), scope='default_arg'):
     with tf.variable_scope(scope):
         _x = tf.nn.relu(x)
         _x = layers.conv2d(_x, n_filters, kernel_size = kernel_size, padding='same', activation = 'relu', name='ResBlockDown_conv2d')
@@ -118,7 +119,7 @@ def resBlockDown(x, n_filters=256, kernel_size=(3, 3), scope='default_arg'): #Au
         shortcut = downsample_conv2d(x, scope+"downsample_conv2d_shortcut", n_filters=n_filters, kernel_size=(1, 1))
         return residual + shortcut
 
-def resBlock(x, scope, kernel_size=(3, 3), n_filters=128): # Named convolution layers here
+def resBlock(x, scope, kernel_size=(3, 3), n_filters=128):
     with tf.variable_scope(scope):
         _x = tf.nn.relu(x)
         _x = layers.conv2d(_x, n_filters, kernel_size=kernel_size, padding='same', activation='relu', name='resblock_conv2d_0')
@@ -126,7 +127,7 @@ def resBlock(x, scope, kernel_size=(3, 3), n_filters=128): # Named convolution l
         shortcut = x
         return residual + shortcut
 
-def generator(n_samples=1024, scope='default_scope'): #I don't pass a scope to resblockUp, which i think is fine. Pretty sure this is all good
+def generator(n_samples=1024, scope='default_scope'):
     with tf.variable_scope(scope + '_generator', reuse=tf.AUTO_REUSE):
         z = tf.random_normal([n_samples, 128])
         out = layers.dense(z, 4 * 4 * 256)
@@ -140,7 +141,7 @@ def generator(n_samples=1024, scope='default_scope'): #I don't pass a scope to r
         out = tf.nn.tanh(out)
         return out
 
-def discriminator(x, scope='default_scope'): #check that my 'global sum pooling' is correct with classmates. Otherwise looks all good.
+def discriminator(x, scope='default_scope'):
     with tf.variable_scope(scope + '_discriminator', reuse=tf.AUTO_REUSE):
         x = resBlockDown(x, n_filters=128, scope='res_down_block_0')
         x = resBlockDown(x, n_filters=128, scope='res_down_block_1')
@@ -290,7 +291,8 @@ with tf.Session(config=config) as sess:
     print(np.shape(generator_samples))
     print("print point 0")
     #generate_composite(0)
-    print("Inception Score:", get_inception_score(generator_samples))
+    if(compute_IS_at_end):
+        print("Inception Score:", get_inception_score(generator_samples))
 
     # Commented out code from initial attempt to incorporate Frechet Inception Score.
     """
