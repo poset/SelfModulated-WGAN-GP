@@ -269,34 +269,26 @@ with tf.Session(config=config) as sess:
     img.save('./images/' + netid + "_GAN_samples_composite"+ '.png')
 
     def get_inception_score(samples, n_splits=10):
-        print("print point 1")
         split_n = int(np.shape(samples)[0]/n_splits)
         print("split n", split_n)
         scores = []
         logit_values = get_activations(samples, sess, batch_size=100)
         inception_p_ests = softmax(logit_values)
-        print("print point 2")
         for i in range(10):
             p_batch = inception_p_ests[i*split_n:(i+1)*split_n, :]
-            print("inception p ests", p_batch[0,:])
             avg_label_vals = np.expand_dims(np.average(p_batch, axis=0), axis=0)
-            print("avg_label_vals", avg_label_vals[0])
             inception_score = math.exp(np.average(np.sum(p_batch * (np.log(p_batch) - np.log(avg_label_vals)), axis=1)))
-            print("inception score:", inception_score)
             scores.append(inception_score)
-        print("print point 3")
-        print("scores:", scores)
         return np.average(scores), np.std(scores)
-    print(np.shape(generator_samples))
-    print("print point 0")
-    #generate_composite(0)
+        
+
     if(compute_IS_at_end):
         print("Inception Score:", get_inception_score(generator_samples))
 
     # Commented out code from initial attempt to incorporate Frechet Inception Score.
     """
-    #pool_logits_r = get_activations(x_test, sess, num_images=my_num, batch_size=100)
-    #pool_logits_f = get_activations(fake_images, sess, num_images=my_num, batch_size=100)
+    #pool_logits_r = get_activations(x_test, sess, layer="PreLogits", num_images=my_num, batch_size=100)
+    #pool_logits_f = get_activations(fake_images, sess, layer="PreLogits", num_images=my_num, batch_size=100)
 
     def FID(acts_real, acts_fake, splits=10):
 
@@ -315,4 +307,3 @@ with tf.Session(config=config) as sess:
     #acts_real = tf.squeeze(get_activations(x_train, sess, layer="PreLogits"))
     #frechet_inception_score = sess.run([FID(acts_real, acts_fake)])
     """
-# Compute  and print Inception Score
