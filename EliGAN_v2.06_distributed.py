@@ -24,12 +24,12 @@ fid_from_acts = gan.eval.frechet_classifier_distance_from_activations
 x_train = (x_train * 1.0/ 128) - 1 #checkthis
 
 
-is_self_modulating = False
+is_self_modulating = True
 will_load = True
 will_train = False
 selected_devices = ['/device:GPU:0', '/device:GPU:1']
 checkpoint_to_load = "./models/ckpt_WGANGP_256_isNOTselfmodulating_iter49000_datetimeinfo_4_23_3_12_7.ckpt"
-starting_iter_val = 25000
+starting_iter_val = 0
 n_final_iter = 50000
 n_filters = 256
 initial_lr = 2e-4     # 2e-4
@@ -52,7 +52,6 @@ def softmax(x):
 
 
 def average_gradients(tower_grads):
-
     avg_grads = []
     for grad_var_bunch in zip(*tower_grads):
         grads = []
